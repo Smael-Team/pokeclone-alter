@@ -29,11 +29,9 @@ namespace Assets.Models
             GameObject m;
             float sArea = SurfaceArea(_verts);
             Debug.Log(sArea);
-            if (sArea > 300)
-            {
-                m = (GameObject)GameObject.Instantiate(Resources.Load("tree"));
-            } else
-            {
+            if (sArea > 300) {
+                m = (GameObject)GameObject.Instantiate(Resources.Load("tree")); //used to be tree
+            } else {
                 m = (GameObject)GameObject.Instantiate(Resources.Load("house1"));
             }
             //var m = new GameObject().AddComponent<BuildingPolygon>();

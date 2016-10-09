@@ -109,8 +109,14 @@ public class World : MonoBehaviour
 	
 	void Update () 
     {
-	
-	}
+      if (Input.touchCount > 0) {
+        GameObject m;
+        m = (GameObject)GameObject.Instantiate(Resources.Load("signpost")); //used to be tree
+        //var m = new GameObject().AddComponent<BuildingPolygon>();
+        m.transform.position = new Vector3((Position.x - 0.5f) * 300, 0,
+            (0.5f - Position.y) * 300);
+      }
+	  }
 
     void OnGUI()
     {
