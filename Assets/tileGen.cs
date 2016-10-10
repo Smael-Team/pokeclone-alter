@@ -20,6 +20,7 @@ public class tileGen : MonoBehaviour
     private Vector2 Position;
     private int Zoom = 16;
     string status = "start";
+    string touchStatus = "no touches";
     // Use this for initialization
 
     IEnumerator Start()
@@ -128,6 +129,16 @@ public class tileGen : MonoBehaviour
             oldX = currX;
             oldZ = currZ;
         }
+
+        if (Input.touchCount > 0)
+        {
+            touchStatus = "touches: " + Input.touchCount;
+            GameObject m;
+            m = (GameObject)GameObject.Instantiate(Resources.Load("signpost")); //used to be tree
+            //var m = new GameObject().AddComponent<BuildingPolygon>();
+            m.transform.position = new Vector3((Position.x - 0.5f) * 611, 0, (0.5f - Position.y) * 611);
+
+        }
     }
 
     //checks if theres a tile in that location, if not then put one down
@@ -196,8 +207,9 @@ public class tileGen : MonoBehaviour
 
     void OnGUI()
     {
-        GUI.Label(new Rect(10, 10, 500, 30), Input.location.lastData.latitude.ToString());
-        GUI.Label(new Rect(10, 50, 500, 30), Input.location.lastData.longitude.ToString());
+        //GUI.Label(new Rect(10, 10, 500, 30), Input.location.lastData.latitude.ToString());
+        //GUI.Label(new Rect(10, 50, 500, 30), Input.location.lastData.longitude.ToString());
+        GUI.Label(new Rect(10, 50, 500, 30), touchStatus);
         GUI.Label(new Rect(10, 100, 500, 30), status);
         //GUI.Label(new Rect(10, 10, 500, 30), Center.x.ToString());
         //GUI.Label(new Rect(10, 50, 500, 30), Center.y.ToString());
