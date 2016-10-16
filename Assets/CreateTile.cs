@@ -4,23 +4,18 @@ using System.Collections.Generic;
 
 public class CreateTile : MonoBehaviour {
 
-    bool creating;
-    public GameObject start; // start and end pole
-    public GameObject end;
+    public GameObject startTile; // start and end pole
+    public GameObject tilePrefab; // to be able to instantiate game tile from script 
 
-    public GameObject wallPrefab; // to be able to instantiate game wall from script 
-    GameObject wall;
+    bool tileSnapping;
 
-    bool xSnapping;
-    bool zSnapping;
-
-    bool poleSnapping;
-
-    List<GameObject> poles;
+    List<GameObject> tiles;
 
     // Use this for initialization
     void Start() {
-        poles = new List<GameObject>();
+        startTile = (GameObject)Instantiate(tilePrefab, Vector3.zero, Quaternion.identity);
+        tiles = new List<GameObject>();
+        tiles.Add(startTile);
     }
 
     // Update is called once per frame
@@ -32,148 +27,37 @@ public class CreateTile : MonoBehaviour {
     {
         if (Input.GetMouseButtonDown(0)) // 0 is the left-click
         {
-            setStart();
-        } else if (Input.GetMouseButtonUp(0))
-        {
-            setEnd();
-        } else
-        {
-            if(creating)
-            {
-                adjust();
-            }
-        }
-
-        if(Input.GetKey (KeyCode.X))
-        {
-            xSnapping = true;
-        } else
-        {
-            xSnapping = false;
-        }
-
-        if(Input.GetKey (KeyCode.Z))
-        {
-            zSnapping = true;
-        } else
-        {
-            zSnapping = false;
-        }
-
-        if (Input.GetKey (KeyCode.P))
-        {
-            poleSnapping = !poleSnapping;
-            if (GameObject.FindGameObjectsWithTag("Pole").Length == 0)
-            {
-                poleSnapping = false;
-                Debug.Log("Set some walls before activating pole snapping.");
-            }
-        }
+            placeTile();
+        } 
     }
 
-    Vector3 gridSnap(Vector3 originalPosition)
+    void placeTile()
     {
-        int granularity = 1;
-        // Example of how function works:
-        // granularity = 2
-        // 15.8 / 2 = 7.9
-        // clamp: 7.9 => 7 (floor func)
-        // 7 * 2 = 14
-        Vector3 snappedPosition = new Vector3(Mathf.Floor(originalPosition.x / granularity) * granularity, originalPosition.y, Mathf.Floor(originalPosition.z / granularity) * granularity);
-        return snappedPosition;
+        Vector3 tapPosition = getWorldPoint();
+        Vector3 newTilePos = newTilePosition(tapPosition);
+
+        GameObject tile = (GameObject) Instantiate(tilePrefab, newTilePos, Quaternion.identity); // Quaternion.identity (no rotation), 
+        tiles.Add(tile);
     }
 
-    void setStart()
+    Vector3 newTilePosition(Vector3 tapPoint)
     {
-        creating = true;
-        // start.transform.position = getWorldPoint(); // no grid snapping
-        start.transform.position = gridSnap(getWorldPoint());
-        wall = (GameObject) Instantiate(wallPrefab, start.transform.position, Quaternion.identity); // Quaternion.identity (no rotation), 
-
-        // Snap to Closest Pole
-        if (poleSnapping)
-        {
-            start.transform.position = closestPoleTo(getWorldPoint()).transform.position;
-        }
-    }
-
-    GameObject closestPoleTo(Vector3 worldPoint)
-    {
-        GameObject closest = null;
-        float distance = Mathf.Infinity;
+        GameObject closestTile = null;
+        float minDistance = Mathf.Infinity;
         float currentDistance = Mathf.Infinity;
-        foreach(GameObject p in poles)
-        {
-            currentDistance = Vector3.Distance(worldPoint, p.transform.position);
-            if(currentDistance < distance)
+        foreach(GameObject p in tiles) {
+            currentDistance = Vector3.Distance(tapPoint, p.transform.position);
+            if(currentDistance < minDistance)
             {
-                distance = currentDistance;
-                closest = p;
+                minDistance = currentDistance;
+                closestTile = p;
             }
         }
-        return closest;
-    }
 
-    void setEnd()
-    {
-        creating = false;
-        // end.transform.position = getWorldPoint();
-        end.transform.position = gridSnap(getWorldPoint());
-
-        if (xSnapping)
-        {
-            end.transform.position = new Vector3(start.transform.position.x, end.transform.position.y, end.transform.position.z);
-        }
-
-        if (zSnapping)
-        {
-            end.transform.position = new Vector3(end.transform.position.x, end.transform.position.y, start.transform.position.z);
-        }
-
-        setEndPoles();
-
-    }
-
-    void setEndPoles()
-    {
-        GameObject p1 = (GameObject)Instantiate(wallPrefab, start.transform.position, start.transform.rotation);
-        GameObject p2 = (GameObject)Instantiate(wallPrefab, end.transform.position, end.transform.rotation);
-        // To add a tag: Main Camera -> Tag: Add Tag... -> click '+' 
-        // Todo: learn more about tags
-        p1.tag = "Pole";
-        p2.tag = "Pole";
-        poles.Add(p1);
-        poles.Add(p2);
-    }
-
-    void adjust()
-    {
-        // end.transform.position = getWorldPoint();
-        end.transform.position = gridSnap(getWorldPoint());
-
-        // whichever axis is being snapped, set the value of end.transform ot the x or z value of the starting pole
-        if (xSnapping)
-        {
-            end.transform.position = new Vector3(start.transform.position.x, end.transform.position.y, end.transform.position.z);
-        }
-
-        if (zSnapping)
-        {
-            end.transform.position = new Vector3(end.transform.position.x, end.transform.position.y, start.transform.position.z);
-        }
-
-        // adjust wall size and rotation
-        adjustWall();
-    }
-
-    void adjustWall()
-    {
-        start.transform.LookAt(end.transform.position); // start should look at end position, LookAt function of transform
-        end.transform.LookAt(start.transform.position);
-        float distance = Vector3.Distance(start.transform.position, end.transform.position); // distance between walls
-        wall.transform.position = start.transform.position + distance / 2 * start.transform.forward; // start.transform.forward -> direction
-        wall.transform.rotation = start.transform.rotation;
-        wall.transform.localScale = new Vector3(wall.transform.localScale.x, wall.transform.localScale.y, distance); // x and y parameter should stay the same
+        bool aboveZPosX = isAboveZPosX(closestTile.transform.position, tapPoint);
+        bool aboveZNegX = isAboveZNegX(closestTile.transform.position, tapPoint);
+        
+        return findProperAdjacency(closestTile, aboveZPosX, aboveZNegX);
     }
 
     Vector3 getWorldPoint()
@@ -189,5 +73,39 @@ public class CreateTile : MonoBehaviour {
             return hit.point;
         }
         return Vector3.zero;
+    }
+
+    bool isAboveZPosX(Vector3 originTile, Vector3 tapPoint)
+    {
+        return tapPoint.z - originTile.z > tapPoint.x - originTile.x;
+    }
+
+    bool isAboveZNegX(Vector3 originTile, Vector3 tapPoint)
+    {
+        return tapPoint.z - originTile.z > -1 * (tapPoint.x - originTile.x);
+    }
+
+    Vector3 findProperAdjacency(GameObject closestTile, bool aboveZPosX, bool aboveZNegX)
+    {
+        Vector3 returnPosition = Vector3.zero;
+
+        if (aboveZPosX && aboveZNegX) // top
+        {
+            returnPosition = new Vector3(closestTile.transform.position.x, 0, closestTile.transform.position.z + 1);
+        }
+        else if (aboveZPosX && !aboveZNegX) // left
+        {
+            returnPosition = new Vector3(closestTile.transform.position.x - 1, 0, closestTile.transform.position.z);
+        }
+        else if (!aboveZPosX && aboveZNegX) //right
+        {
+            returnPosition = new Vector3(closestTile.transform.position.x + 1, 0, closestTile.transform.position.z);
+        }
+        else if (!aboveZPosX && !aboveZNegX) // bottom
+        {
+            returnPosition = new Vector3(closestTile.transform.position.x, 0, closestTile.transform.position.z - 1);
+        }
+
+        return returnPosition;
     }
 }
