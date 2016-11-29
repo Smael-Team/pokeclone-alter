@@ -13,9 +13,12 @@ public class CreateTile : MonoBehaviour {
 
     // Use this for initialization
     void Start() {
+        print("start called");
         startTile = (GameObject)Instantiate(tilePrefab, Vector3.zero, Quaternion.identity);
         tiles = new List<GameObject>();
+        print(tiles);
         tiles.Add(startTile);
+        print(tiles);
     }
 
     // Update is called once per frame
@@ -45,6 +48,7 @@ public class CreateTile : MonoBehaviour {
         GameObject closestTile = null;
         float minDistance = Mathf.Infinity;
         float currentDistance = Mathf.Infinity;
+        print(tiles);
         foreach(GameObject p in tiles) {
             currentDistance = Vector3.Distance(tapPoint, p.transform.position);
             if(currentDistance < minDistance)
